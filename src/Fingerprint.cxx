@@ -52,7 +52,7 @@ Fingerprint::Fingerprint(SubbandAnalysis* pSubbandAnalysis, int offset)
     : _pSubbandAnalysis(pSubbandAnalysis), _Offset(offset) { }
 
 
-uint Fingerprint::adaptiveOnsets(int ttarg, matrix_u&out, uint*&onset_counter_for_band) {
+uint Fingerprint::adaptiveOnsets(int ttarg, std::vector<uint>&out, uint &num_frames, uint*&onset_counter_for_band) {
     //  E is a sgram-like matrix of energies.
     const float *pE;
     int bands, frames, i, j, k;
@@ -62,7 +62,8 @@ uint Fingerprint::adaptiveOnsets(int ttarg, matrix_u&out, uint*&onset_counter_fo
     double overfact = 1.1;  /* threshold rel. to actual peak */
     uint onset_counter = 0;
 
-    matrix_f E = _pSubbandAnalysis->getMatrix();
+    std::vector<float> E = _pSubbandAnalysis->getMatrix();
+    uint subband_frames = _pSubbandAnalysis->getNumFrames();
 
     // Take successive stretches of 8 subband samples and sum their energy under a hann window, then hop by 4 samples (50% window overlap).
     int hop = 4;
@@ -71,22 +72,23 @@ uint Fingerprint::adaptiveOnsets(int ttarg, matrix_u&out, uint*&onset_counter_fo
     for(int i = 0 ; i != nsm ; i++)
         ham[i] = .5 - .5*cos( (2.*M_PI/(nsm-1))*i);
 
-    int nc =  floor((float)E.size2()/(float)hop)-(floor((float)nsm/(float)hop)-1);
-    matrix_f Eb = matrix_f(nc, 8);
-    for(uint r=0;r<Eb.size1();r++) for(uint c=0;c<Eb.size2();c++) Eb(r,c) = 0.0;
+    int nc =  floor((float)subband_frames/(float)hop)-(floor((float)nsm/(float)hop)-1);
+    std::vector<float> Eb(nc * 8);
+    for(uint r=0;r<nc;r++) for(uint c=0;c<8;c++) Eb[r*8+c] = 0.0;
 
     for(i=0;i<nc;i++) {
         for(j=0;j<SUBBANDS;j++) {
-            for(k=0;k<nsm;k++)  Eb(i,j) = Eb(i,j) + ( E(j,(i*hop)+k) * ham[k]);
-            Eb(i,j) = sqrtf(Eb(i,j));
+            for(k=0;k<nsm;k++)  Eb[i*SUBBANDS+j] = Eb[i*SUBBANDS+j] + ( E[j*subband_frames + (i*hop)+k] * ham[k]);
+            Eb[i*SUBBANDS+j] = sqrtf(Eb[i*SUBBANDS+j]);
         }
     }
 
-    frames = Eb.size1();
-    bands = Eb.size2();
-    pE = &Eb.data()[0];
+    frames = nc;
+    num_frames = frames;
+    bands = 8;
+    pE = &Eb[0];
 
-    out = matrix_u(SUBBANDS, frames);
+    out = std::vector<uint>(SUBBANDS * frames);
     onset_counter_for_band = new uint[SUBBANDS];
 
     double bn[] = {0.1883, 0.4230, 0.3392}; /* preemph filter */   // new
@@ -138,12 +140,12 @@ uint Fingerprint::adaptiveOnsets(int ttarg, matrix_u&out, uint*&onset_counter_fo
 
             if (contact[j] == 0 && lcontact[j] == 1) {
                 /* detach */
-                if (onset_counter_for_band[j] > 0   && (int)out(j, onset_counter_for_band[j]-1) > i - deadtime) {
+                if (onset_counter_for_band[j] > 0   && (int)out[j * frames + onset_counter_for_band[j]-1] > i - deadtime) {
                     // overwrite last-written time
                     --onset_counter_for_band[j];
                     --onset_counter;
                 }
-                out(j, onset_counter_for_band[j]++) = i;
+                out[j*frames + onset_counter_for_band[j]++] = i;
                 ++onset_counter;
                 tsince[j] = 0;
             }
@@ -163,7 +165,7 @@ uint Fingerprint::adaptiveOnsets(int ttarg, matrix_u&out, uint*&onset_counter_fo
         }
         pE += bands;
     }
-    MatrixUtility::TextFileOutputUint(out, "out-onsets.txt");
+    MatrixUtility::TextFileOutputVectorUint(out, SUBBANDS, frames, "out-onsets-vector.txt");
     return onset_counter;
 }
 
@@ -185,15 +187,16 @@ void Fingerprint::Compute() {
     unsigned char hash_material[5];
     for(uint i=0;i<5;i++) hash_material[i] = 0;
     uint * onset_counter_for_band;
-    matrix_u out;
-    uint onset_count = adaptiveOnsets(345, out, onset_counter_for_band);
+    std::vector<uint> out;
+    uint frames;
+    uint onset_count = adaptiveOnsets(345, out, frames, onset_counter_for_band);
     _Codes.resize(onset_count*6);
 
     for(unsigned char band=0;band<SUBBANDS;band++) {
         if (onset_counter_for_band[band]>2) {
             for(uint onset=0;onset<onset_counter_for_band[band]-2;onset++) {
                 // What time was this onset at?
-                uint time_for_onset_ms_quantized = quantized_time_for_frame_absolute(out(band,onset));
+                uint time_for_onset_ms_quantized = quantized_time_for_frame_absolute(out[band*frames + onset]);
 
                 uint p[2][6];
                 for (int i = 0; i < 6; i++) {
@@ -204,20 +207,20 @@ void Fingerprint::Compute() {
 
                 if ((int)onset == (int)onset_counter_for_band[band]-4)  { nhashes = 3; }
                 if ((int)onset == (int)onset_counter_for_band[band]-3)  { nhashes = 1; }
-                p[0][0] = (out(band,onset+1) - out(band,onset));
-                p[1][0] = (out(band,onset+2) - out(band,onset+1));
+                p[0][0] = (out[band*frames + onset+1] - out[band*frames + onset]);
+                p[1][0] = (out[band*frames + onset+2] - out[band*frames + onset+1]);
                 if(nhashes > 1) {
-                    p[0][1] = (out(band,onset+1) - out(band,onset));
-                    p[1][1] = (out(band,onset+3) - out(band,onset+1));
-                    p[0][2] = (out(band,onset+2) - out(band,onset));
-                    p[1][2] = (out(band,onset+3) - out(band,onset+2));
+                    p[0][1] = (out[band*frames + onset+1] - out[band*frames + onset]);
+                    p[1][1] = (out[band*frames + onset+3] - out[band*frames + onset+1]);
+                    p[0][2] = (out[band*frames + onset+2] - out[band*frames + onset]);
+                    p[1][2] = (out[band*frames + onset+3] - out[band*frames + onset+2]);
                     if(nhashes > 3) {
-                        p[0][3] = (out(band,onset+1) - out(band,onset));
-                        p[1][3] = (out(band,onset+4) - out(band,onset+1));
-                        p[0][4] = (out(band,onset+2) - out(band,onset));
-                        p[1][4] = (out(band,onset+4) - out(band,onset+2));
-                        p[0][5] = (out(band,onset+3) - out(band,onset));
-                        p[1][5] = (out(band,onset+4) - out(band,onset+3));
+                        p[0][3] = (out[band*frames + onset+1] - out[band*frames + onset]);
+                        p[1][3] = (out[band*frames + onset+4] - out[band*frames + onset+1]);
+                        p[0][4] = (out[band*frames + onset+2] - out[band*frames + onset]);
+                        p[1][4] = (out[band*frames + onset+4] - out[band*frames + onset+2]);
+                        p[0][5] = (out[band*frames + onset+3] - out[band*frames + onset]);
+                        p[1][5] = (out[band*frames + onset+4] - out[band*frames + onset+3]);
                     }
                 }
 

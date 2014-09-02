@@ -27,12 +27,12 @@ SubbandAnalysis::~SubbandAnalysis() {
 
 void SubbandAnalysis::Init() {
     // Calculate the analysis filter bank coefficients
-    _Mr = matrix_f(M_ROWS, M_COLS);
-    _Mi = matrix_f(M_ROWS, M_COLS);
+    _Mr = std::vector<float>(M_ROWS * M_COLS);
+    _Mi = std::vector<float>(M_ROWS * M_COLS);
     for (uint i = 0; i < M_ROWS; ++i) {
         for (uint k = 0; k < M_COLS; ++k) {
-            _Mr(i,k) = cos((2*i + 1)*(k-4)*(M_PI/16.0));
-            _Mi(i,k) = sin((2*i + 1)*(k-4)*(M_PI/16.0));
+            _Mr[i*M_COLS + k] = cos((2*i + 1)*(k-4)*(M_PI/16.0));
+            _Mi[i*M_COLS + k] = sin((2*i + 1)*(k-4)*(M_PI/16.0));
         }
     }
 }
@@ -46,7 +46,7 @@ void SubbandAnalysis::Compute() {
     _NumFrames = (_NumSamples - C_LEN + 1)/SUBBANDS;
     assert(_NumFrames > 0);
 
-    _Data = matrix_f(SUBBANDS, _NumFrames);
+    _Data = std::vector<float>(SUBBANDS * _NumFrames);
 
     for (t = 0; t < _NumFrames; ++t) {
         for (i = 0; i < C_LEN; ++i) {
@@ -64,10 +64,10 @@ void SubbandAnalysis::Compute() {
         for (i = 0; i < M_ROWS; ++i) {
             float Dr = 0, Di = 0;
             for (j = 0; j < M_COLS; ++j) {
-                Dr += _Mr(i,j) * Y[j];
-                Di -= _Mi(i,j) * Y[j];
+                Dr += _Mr[i*M_COLS + j] * Y[j];
+                Di -= _Mi[i*M_COLS + j] * Y[j];
             }
-            _Data(i,t) = Dr*Dr + Di*Di;
+            _Data[i*_NumFrames + t] = Dr*Dr + Di*Di;
         }
     }
 }

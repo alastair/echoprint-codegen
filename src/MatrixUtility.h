@@ -9,8 +9,8 @@
 #define MATRIXUTILITY_H
 
 #include "Common.h"
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/matrix_proxy.hpp>
+#include "matrix.hpp"
+#include <vector>
 
 namespace ublas = boost::numeric::ublas;
 
@@ -28,5 +28,6 @@ namespace MatrixUtility {
     bool FileOutput(const matrix_f& A, const char* filename);
     bool TextFileOutput(const matrix_f& A, const char* filename);
     bool TextFileOutputUint(const matrix_u& A, const char* filename);
+    bool TextFileOutputVectorUint(const std::vector<uint>& A, int size1, int size2, const char* filename);
 }
 #endif

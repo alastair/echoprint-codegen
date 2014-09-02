@@ -48,15 +48,15 @@ public:
 public:
     inline uint getNumFrames() const {return _NumFrames;}
     inline uint getNumBands() const {return SUBBANDS;}
-    const matrix_f& getMatrix() {return _Data;}
+    const std::vector<float>& getMatrix() {return _Data;}
 
 protected:
     const float* _pSamples;
     uint _NumSamples;
     uint _NumFrames;
-    matrix_f _Mi;
-    matrix_f _Mr;
-    matrix_f _Data;
+    std::vector<float> _Mi;
+    std::vector<float> _Mr;
+    std::vector<float> _Data;
 
 private:
     void Init();

@@ -34,7 +34,7 @@ public:
     uint quantized_time_for_frame_absolute(uint frame);
     Fingerprint(SubbandAnalysis* pSubbandAnalysis, int offset);
     void Compute();
-    uint adaptiveOnsets(int ttarg, matrix_u&out, uint*&onset_counter_for_band) ;
+    uint adaptiveOnsets(int ttarg, std::vector<uint>&out, uint &numframes, uint*&onset_counter_for_band) ;
     std::vector<FPCode>& getCodes(){return _Codes;}
 protected:
     SubbandAnalysis *_pSubbandAnalysis;

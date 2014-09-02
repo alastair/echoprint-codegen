@@ -27,6 +27,21 @@ bool TextFileOutputUint(const matrix_u& A, const char* filename) {
     return success;
 }
 
+bool TextFileOutputVectorUint(const std::vector<uint>& A, int size1, int size2, const char* filename) {
+    FILE *matrix_file = fopen(filename, "w");
+    bool success = (matrix_file != NULL);
+    if (success) {
+        for (uint i = 0; i < size1; i++) {
+            for (uint j = 0; j < size2; j++)
+                fprintf(matrix_file, "%d ", A[i*size2 + j]);
+
+            fprintf(matrix_file, "\n");
+        }
+        fclose(matrix_file);
+    }
+    return success;
+}
+
 bool TextFileOutput(const matrix_f& A, const char* filename) {
     FILE *matrix_file = fopen(filename, "w");
     bool success = (matrix_file != NULL);
