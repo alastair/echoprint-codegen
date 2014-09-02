@@ -27,5 +27,6 @@ namespace MatrixUtility {
     inline uint cols(matrix_f A){ return A.size2();}
     bool FileOutput(const matrix_f& A, const char* filename);
     bool TextFileOutput(const matrix_f& A, const char* filename);
+    bool TextFileOutputUint(const matrix_u& A, const char* filename);
 }
 #endif

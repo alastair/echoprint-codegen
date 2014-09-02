@@ -11,6 +11,22 @@
 
 namespace MatrixUtility {
 
+bool TextFileOutputUint(const matrix_u& A, const char* filename) {
+    FILE *matrix_file = fopen(filename, "w");
+    bool success = (matrix_file != NULL);
+    if (success) {
+        const uint *d = &A.data()[0];
+        for (uint i = 0; i < A.size1(); i++) {
+            for (uint j = 0; j < A.size2(); j++)
+                fprintf(matrix_file, "%d ", d[i*A.size2() + j]);
+
+            fprintf(matrix_file, "\n");
+        }
+        fclose(matrix_file);
+    }
+    return success;
+}
+
 bool TextFileOutput(const matrix_f& A, const char* filename) {
     FILE *matrix_file = fopen(filename, "w");
     bool success = (matrix_file != NULL);

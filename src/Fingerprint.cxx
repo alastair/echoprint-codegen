@@ -163,7 +163,7 @@ uint Fingerprint::adaptiveOnsets(int ttarg, matrix_u&out, uint*&onset_counter_fo
         }
         pE += bands;
     }
-
+    MatrixUtility::TextFileOutputUint(out, "out-onsets.txt");
     return onset_counter;
 }
 
