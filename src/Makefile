@@ -5,16 +5,17 @@ VERSION := $(word 1, $(EP_VERSION)).$(word 2, $(EP_VERSION)).$(word 3, $(EP_VERS
 VERSION_MAJ := $(word 1, $(EP_VERSION))
 VERSION_COMPAT := $(word 1, $(EP_VERSION)).$(word 2, $(EP_VERSION))
 UNAME := $(shell uname -s)
-CXX=g++
+CXX=emcc
 CC=gcc
-#OPTFLAGS=-g -O0
-OPTFLAGS=-O3 -DBOOST_UBLAS_NDEBUG -DNDEBUG
+OPTFLAGS=-O2 -I/home/alastair/mhd/emsdk_portable/emscripten/master/tests/zlib
+#OPTFLAGS=-O3 -DBOOST_UBLAS_NDEBUG -DNDEBUG
 BOOST_CFLAGS=
 TAGLIB_CFLAGS=`taglib-config --cflags`
 TAGLIB_LIBS=`taglib-config --libs`
-CXXFLAGS=-Wall $(BOOST_CFLAGS) $(TAGLIB_CFLAGS) -fPIC $(OPTFLAGS)
+CXXFLAGS=-Wall $(BOOST_CFLAGS) -fPIC $(OPTFLAGS)
 CFLAGS=-Wall -fPIC $(OPTFLAGS)
-LDFLAGS=$(TAGLIB_LIBS) -lz -lpthread $(OPTFLAGS)
+LDFLAGS=
+#LDFLAGS=-lz -lpthread $(OPTFLAGS)
 LIBNAME=libcodegen.so
 SONAME=$(LIBNAME).$(VERSION_MAJ)
 
@@ -36,8 +37,11 @@ ifeq ($(UNAME),Darwin)
 		-macosx_version_min 10.6 -current_version $(VERSION) -o libcodegen.$(VERSION).dylib -undefined suppress \
 	    $(MODULES_LIB) -framework vecLib -framework Accelerate
 else
-	$(CXX) -shared -fPIC -Wl,-soname,$(SONAME) -o $(LIBNAME).$(VERSION) $(MODULES_LIB) -lz
+	$(CXX) -shared -fPIC -Wl,-soname,$(SONAME) -o $(LIBNAME).$(VERSION) $(MODULES_LIB)
 endif
+
+emscripten: libcodegen
+	emcc -O2 libcodegen.so.4.1.1 zlib.o -o codegen.js
 
 echoprint-codegen: $(MODULES) main.o
 	$(CXX) $(MODULES) main.o $(LDFLAGS) -o ../echoprint-codegen
