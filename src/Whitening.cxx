@@ -6,6 +6,7 @@
 
 #include "Whitening.h"
 #include "AudioStreamInput.h"
+#include <stdlib.h>
 
 Whitening::Whitening(AudioStreamInput* pAudio) {
     _pSamples = pAudio->getSamples();
@@ -93,7 +94,7 @@ void Whitening::ComputeBlock(int start, int blockSize) {
         if (_p < minip) {
             minip = _p;
         }
-        
+
         for (j = i+1; j <= _p; ++j) {
             acc -= _ai[j]*_Xo[_p + i-j];
         }

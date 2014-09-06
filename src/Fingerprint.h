@@ -10,7 +10,6 @@
 
 #include "Common.h"
 #include "SubbandAnalysis.h"
-#include "MatrixUtility.h"
 #include <vector>
 
 #define HASH_SEED 0x9ea5fa36

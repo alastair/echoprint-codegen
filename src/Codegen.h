@@ -12,6 +12,7 @@
 
 #include <string>
 #include <vector>
+#include <zlib.h>
 
 #ifdef _MSC_VER
     #ifdef CODEGEN_EXPORTS
@@ -28,6 +29,10 @@
 class Fingerprint;
 class SubbandAnalysis;
 struct FPCode;
+
+extern "C" {
+    const char *fingerprint_file(const char *filename);
+}
 
 class CODEGEN_API Codegen {
 public:

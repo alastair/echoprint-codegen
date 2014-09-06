@@ -7,6 +7,7 @@
 #include "Fingerprint.h"
 #include "Params.h"
 #include <string.h>
+#include <math.h>
 
 #ifdef _WIN32
 #include "win_funcs.h"
@@ -165,7 +166,6 @@ uint Fingerprint::adaptiveOnsets(int ttarg, std::vector<uint>&out, uint &num_fra
         }
         pE += bands;
     }
-    MatrixUtility::TextFileOutputVectorUint(out, SUBBANDS, frames, "out-onsets-vector.txt");
     return onset_counter;
 }
 

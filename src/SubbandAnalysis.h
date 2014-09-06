@@ -8,7 +8,7 @@
 #define SUBBANDANALYSIS_H
 #include "Common.h"
 #include "Params.h"
-#include "MatrixUtility.h"
+#include <vector>
 
 #define C_LEN 128
 #define SUBBANDS 8

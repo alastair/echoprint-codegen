@@ -15,16 +15,52 @@
 #include "SubbandAnalysis.h"
 #include "Fingerprint.h"
 #include "Common.h"
-
 #include "Base64.h"
-#include <zlib.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+
 
 using std::string;
 using std::vector;
 
+extern "C" {
+
+    const char *fingerprint_js_float(float *samples, int numSamples) {
+        Codegen *c = new Codegen(samples, numSamples, 20);
+        std::string codestring = c->getCodeString();
+        return codestring.c_str();
+    }
+    const char *fingerprint_js_short(short *input, int numSamples) {
+        float *samples = (float*)malloc(sizeof(float) * numSamples);
+        long sampleCount = 0;
+        for (long i = 0; i < numSamples; i++) {
+            float data = (float) input[i] / 32768.0f;
+            samples[sampleCount++] = data;
+        }
+        return fingerprint_js_float(samples, numSamples);
+    }
+
+const char *fingerprint_file(const char *filename) {
+    FILE *fp = fopen(filename, "r");
+    fseek(fp, 0, SEEK_END);
+    long size = ftell(fp);
+    rewind(fp);
+    // Samples are 2 bytes each, so we need size/2 floats to put the samples in
+    size = size / 2;
+    short *samples = (short*)malloc(sizeof(short) * size);
+    long sampleCount = 0;
+    for (long i = 0; i < size; i++) {
+        short v;
+        fread(&v, 2, 1, fp);
+        samples[sampleCount++] = v;
+    }
+
+    return fingerprint_js_short(samples, size);
+}
+}
+
 Codegen::Codegen(const float* pcm, unsigned int numSamples, int start_offset) {
-    if (Params::AudioStreamInput::MaxSamples < (uint)numSamples)
-        throw std::runtime_error("File was too big\n");
 
     Whitening *pWhitening = new Whitening(pcm, numSamples);
     pWhitening->Compute();
@@ -63,7 +99,6 @@ string Codegen::createCodeString(vector<FPCode> vCodes) {
     return compress(codestream.str());
 }
 
-
 string Codegen::compress(const string& s) {
     long max_compressed_length = s.size()*2;
     unsigned char *compressed = new unsigned char[max_compressed_length];
@@ -89,3 +124,4 @@ string Codegen::compress(const string& s) {
     delete [] compressed;
     return encoded;
 }
+

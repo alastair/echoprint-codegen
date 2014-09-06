@@ -8,7 +8,6 @@
 #define WHITENING_H
 #include "Common.h"
 #include "Params.h"
-#include "MatrixUtility.h"
 
 
 class AudioStreamInput;
